@@ -12,23 +12,24 @@ def convert_timestamp(seconds):
     )
 
 
-def convert_line(input, time_point):
-    return "{} {}".format(input.lstrip(), convert_timestamp(time_point))
+def convert_line(input, time_point, pause=False):
+    append = " (...)" if pause else ""
+    return "{}{} {}".format(input.lstrip(), append, convert_timestamp(time_point))
 
 
 def convert_whisper_to_transcripto(input_file, output_file):
     input = json.load(input_file)
     segments = input["segments"]
     number_of_segments = len(segments)
-    print(number_of_segments)
     for i in range(number_of_segments):
         text = segments[i]["text"]
-        time_point = (
-            segments[i + 1]["start"]
-            if (i < number_of_segments - 1)
-            else segments[i]["end"]
-        )
-        output_file.write("{}\n\n".format(convert_line(text, time_point)))
+        time_point = segments[i]["end"]
+        pause = False
+        if i < number_of_segments - 1:
+            time_point = segments[i + 1]["start"]
+            if time_point - segments[i]["end"] > 3.0:
+                pause = True
+        output_file.write("{}\n\n".format(convert_line(text, time_point, pause)))
 
 
 if __name__ == "__main__":
